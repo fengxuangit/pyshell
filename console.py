@@ -6,10 +6,14 @@ import sys
 import sqlite3
 import re
 from cmd import Cmd
+from lib.aspxshell import *
+from lib.aspshell import *
+from lib.phpshell import *
 from lib.tools import *
 
 class MainConsole(Cmd):
     prompt = "pyshell> "
+    Object = None
     
     def __init__(self):
         Cmd.__init__(self)
@@ -76,8 +80,7 @@ class MainConsole(Cmd):
         print format
         for line in result:
             print "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t".format(line[0],line[1],line[2],line[3],line[4], Tools.timestamp_datetime(line[5]))
-        
-            
+        del db
         
     
     #改
@@ -107,7 +110,7 @@ class MainConsole(Cmd):
         
         
     #删
-    def do_del(self, argv):
+    def do_remove(self, argv):
         condition = argv.split(' ')[0]
         sql = "delete from shell where "
         if condition.find('id=')>=0 :
@@ -130,22 +133,119 @@ class MainConsole(Cmd):
             print "del ok"
         else:
             print "del error"
+        del db
            
+    def do_search(self, argv):
+        condition = argv.split(' ')
+        sql = "select * from shell where "
+        if condition.find('shell=')>=0:
+            shell = condition[condition.find('=')+1:]
+            sql += '''shell like "%s"''' % shell
+        if condition.find('pass=')>=0:
+            ps = condition[condition.find('=')+1:]
+            sql += '''pass like "%s"''' % shell
+        if condition.find('date')>=0:
+            sql += '''date like "%s" ''' % condition
+        else:
+            print "sorry , We Don't suppost you syntax"
+            return 0
         
     #执行系统命令    
     def do_shell(self, argv):
-        pass
+        code = subprocess.call(argv,shell=True)
+                  
+    #指定shell，进入高级模式              
+    def do_get(self, argv):
+        id = argv.split(' ')[0]
+        if re.match(r"\d+", id) ==None:
+            print "sorry, it is just support id"
+            return 0
+        sql = "select * from shell where id=%s " % id
+        db = DBSEStorage()
+        result = db.execute(sql).fetchone()
+        if result == None:
+            printf("No this Id")
+            return None
+        if result[3] == "php":
+            self.object = phpshell(result[1], result[2])
+        elif result[3] == 'asp':
+            self.object = aspshell(result[1], result[2])
+        else:
+            self.object = aspxshell(result[1], result[2])
+        self.prompt = "pyshell|%s > " % result[3]
+        del db
     
+    # 高级
+    # 显示文件
+    def do_ls(self, argv):
+        if argv.split(' ')[0] != '':
+            self.object.GetFilePath(argv.split(' ')[0])
+        self.object.GetFilePath()
+        
+    #删除文件
+    def do_del(self, argv):
+        filelist = argv.split(' ')[0]
+        if "," in filelist:
+            files = filelist.split(',')
+            for line in files:
+                self.object.DeleteFile(line)
+            return 0
+        else:
+            files = filelist
+            self.object.DeleteFile(files)
+            return 0
+        # self.object.DeleteFile( )
+    
+    def do_upload(self, argv):
+        list = argv.split(' ')
+        if "," in list[0]:
+            files = filelist.split(',')
+            for line in files:
+                if len(list) == 2:
+                    self.object.UploadFile(line, list[1])  #上传到远程文件夹
+                self.object.UploadFile(line, None) # 上传到网站根目录
+            return 0
+        else:
+            files = list[0]
+            if len(list) == 2:
+                self.object.UploadFile(files, list[1])  #上传到远程文件夹
+            self.object.UploadFile(files, None) # 上传到网站根目录
+            return 0
+   
+    def do_rename(self, argv):
+        oldname = argv.split(' ')[0]
+        newname = argv.split(' ')[1]
+        self.object.RenameFile(oldname, newname)
+        
+    def do_read(self, argv):
+        file = argv.split(' ')[0]
+        self.object.ReadFile(file)
+        
+    def do_down(self, argv):
+        file = argv.split(' ')[0]
+        self.object.DownloadFile(file)
+        
+    def do_copy(self, argv):
+        source = argv.split(' ')[0]
+        desc = argv.split(' ')[1]
+        self.object.CopyFile(source, desc)
+
+        
     #更新数据库
     def do_updatedb(self, argv):
         pass
         
     def do_q(self, argv):
         print "Bye"
+        try:
+            del self.object
+        except:
+            pass
         return True
     
     def do_exit(self, argv):
         print "Bye"
+        del self.object
         return True
         
     def Error(self, info):
@@ -174,15 +274,16 @@ class DBSEStorage:
         try:
             result = self.cursor.execute(sql)
             self.cursor.commit()
+            return result
         except :
             print "error %s not exceute success" % sql
         
-        return result
+        
                  
     def __del__(self):
         self.cursor.close()
         
-        
+
 
 def debug(info):
     print info
