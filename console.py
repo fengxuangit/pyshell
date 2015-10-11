@@ -189,12 +189,10 @@ class MainConsole(Cmd):
             files = filelist.split(',')
             for line in files:
                 self.object.DeleteFile(line)
-            printf('delete files ok')
             return 0
         else:
             files = filelist
             self.object.DeleteFile(files)
-            printf('delete file ok')
             return 0
         # self.object.DeleteFile( )
     
