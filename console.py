@@ -122,7 +122,6 @@ class MainConsole(Cmd):
         else:
             print "sorry , We don't Konw what you want delete"
             return 0
-            
         db = DBSEStorage()
         result = db.execute(sql)
         if result:
@@ -205,13 +204,15 @@ class MainConsole(Cmd):
             for line in files:
                 if len(list) == 2:
                     self.object.UploadFile(line, list[1])  #上传到远程文件夹
-                self.object.UploadFile(line, None) # 上传到网站根目录
+                else:
+                    self.object.UploadFile(line, None) # 上传到网站根目录
             return 0
         else:
             files = list[0]
             if len(list) == 2:
                 self.object.UploadFile(files, list[1])  #上传到远程文件夹
-            self.object.UploadFile(files, None) # 上传到网站根目录
+            else:
+                self.object.UploadFile(files, None) # 上传到网站根目录
             return 0
    
     def do_rename(self, argv):
@@ -228,9 +229,13 @@ class MainConsole(Cmd):
         self.object.DownloadFile(file)
         
     def do_copy(self, argv):
+        array = argv.split(' ')
         source = argv.split(' ')[0]
-        desc = argv.split(' ')[1]
-        self.object.CopyFile(source, desc)
+        if len(array) == 2:
+            desc = argv.split(' ')[1]
+            self.object.CopyFile(source, desc)
+        else:
+            self.object.CopyFile(source)
 
     def do_edit(self, argv):
         array = argv.split(' ')

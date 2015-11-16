@@ -2,6 +2,7 @@
 #! -*-coding:utf-8 -*-
 
 import time
+import os
 import urllib2
 import urllib
 import datetime
@@ -41,7 +42,6 @@ class Spider:
     def oldpost(url, data):
         header = {'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN;'
         ' rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14'}
-        # data = "w=%s" % data
         req = urllib2.Request(url, data=data)
         req.add_header('User-Agent', header)
         html = urllib2.urlopen(req)
@@ -87,3 +87,18 @@ def CorrectPath(path, default=None):
 def execcmd(cmd):
     code = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
     (stdout, stderr) = code.communicate()
+
+def getfilename(file):
+    if IsWin():
+        if file.find('\\') < 0:
+            return file
+        else:
+            return os.path.basename(file)
+    else:
+        if file.find('/') < 0:
+            return file
+        else:
+            return os.path.basename(file)
+
+def getonepath(path):
+    return os.path.dirname(path)
